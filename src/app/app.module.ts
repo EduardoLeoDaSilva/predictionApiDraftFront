@@ -6,6 +6,7 @@ import { AppComponent } from './app.component';
 import { EstatiscasComponent } from './grafico/estatiscas/estatiscas.component';
 import { HttpClientModule } from '@angular/common/http';
 import { DerivClientService } from './services/DerivService';
+// import { DerivClientService } from './services/DerivService';
 @NgModule({
   declarations: [
     AppComponent,
@@ -16,7 +17,7 @@ import { DerivClientService } from './services/DerivService';
     AppRoutingModule,
     HttpClientModule
   ],
-  providers: [],
+  providers: [DerivClientService],
   bootstrap: [AppComponent],
 })
 export class AppModule { }

@@ -4,6 +4,7 @@ import { AfterViewInit, Component, ElementRef, OnInit, Renderer2, ViewChild } fr
 // import * as Plotly from 'plotly.js';
 import * as Plotly from 'plotly.js-dist-min'
 import { DerivClientService } from 'src/app/services/DerivService';
+// import { DerivClientService } from 'src/app/services/DerivService';
 type responseType = {
   precoReais: any;
   smaTreinado: any;
@@ -22,13 +23,13 @@ type responseType2 = {
   templateUrl: './estatiscas.component.html',
   styleUrls: ['./estatiscas.component.css']
 })
-export class EstatiscasComponent implements OnInit,AfterViewInit {
+export class EstatiscasComponent implements OnInit, AfterViewInit {
 
 
   realPriceCandle: any;
   candleTrained: any;
-  candlePredicted:any;
-  graph_plot : any;
+  candlePredicted: any;
+  graph_plot: any;
   constructor(private http: HttpClient, private rd: Renderer2, private deriv: DerivClientService) {
 
   }
@@ -42,18 +43,20 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
   async ngAfterViewInit() {
     //Called after ngAfterContentInit when the component's view has been initialized. Applies to components only.
     //Add 'implements AfterViewInit' to the class.
-     this.realPriceCandle = document.getElementById('candleReal') as HTMLElement;
-     this.candleTrained = document.getElementById('candleTrained') as HTMLElement;
-     this.candlePredicted = document.getElementById('candlePredicted') as HTMLElement;
-     this.graph_plot = document.getElementById('grafico') as HTMLElement;
+
+    this.deriv.authenticate();
+    this.realPriceCandle = document.getElementById('candleReal') as HTMLElement;
+    this.candleTrained = document.getElementById('candleTrained') as HTMLElement;
+    this.candlePredicted = document.getElementById('candlePredicted') as HTMLElement;
+    this.graph_plot = document.getElementById('grafico') as HTMLElement;
 
     this.http.get('http://localhost:3000/api/predictionRNN').subscribe((response) => {
       let tt = response as responseType;
-         Plotly.newPlot(this.graph_plot, [{ x: tt.precoReais.epochs, y: tt.precoReais.prices, name: 'Preço Real' }]);
-         Plotly.addTraces (this.graph_plot, [{ x: tt.smaTreinado.timestamps_b, y: tt.smaTreinado.sma, name: 'sma treinado' }]);
-         Plotly.addTraces(this.graph_plot, [{ x: tt.treinado.timestamps_b, y: tt.treinado.values, name: 'Validação' }]);
-         Plotly.addTraces(this.graph_plot, [{ x: tt.previsto.timestamps_c, y: tt.previsto.values, name: 'previsão' }]);
-      });
+      Plotly.newPlot(this.graph_plot, [{ x: tt.precoReais.epochs, y: tt.precoReais.prices, name: 'Preço Real' }]);
+      Plotly.addTraces(this.graph_plot, [{ x: tt.smaTreinado.timestamps_b, y: tt.smaTreinado.sma, name: 'sma treinado' }]);
+      Plotly.addTraces(this.graph_plot, [{ x: tt.treinado.timestamps_b, y: tt.treinado.values, name: 'Validação' }]);
+      // Plotly.addTraces(this.graph_plot, [{ x: tt.previsto.timestamps_c, y: tt.previsto.values, name: 'previsão' }]);
+    });
 
     // this.http.get('http://localhost:3000/api/predictRNN3').subscribe((res) => {
     //    this.buildRealPrice(res);
@@ -61,20 +64,40 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
     //    this.buildValidation(res);
     // })
 
+    this.deriv.subject.subscribe((res: any) => {
+
+      Plotly.newPlot(this.graph_plot, [{ x: res.precoReais.epochs, y: res.precoReais.prices, name: 'Preço Real' }]);
+      // Plotly.addTraces(this.graph_plot, [{ x: res.smaTreinado.timestamps_b, y: res.smaTreinado.sma, name: 'sma treinado' }]);
+      Plotly.addTraces(this.graph_plot, [{ x: res.treinado.timestamps_b, y: res.treinado.values, name: 'Validação' }]);
+      Plotly.addTraces(this.graph_plot, [{ x: res.previsto.timestamps_e, y: res.previsto.values, name: 'previsão' }]);
+    })
+  }
+
+  formatDate(date: any) {
+    var d = new Date(date),
+      month = '' + (d.getMonth() + 1),
+      day = '' + d.getDate(),
+      year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
   }
 
 
- chunkArray(array:[]){
-  const chunkSize = 4;
-  let newArray = [];
-  for (let i = 0; i < array.length; i += chunkSize) {
+
+  chunkArray(array: []) {
+    const chunkSize = 4;
+    let newArray = [];
+    for (let i = 0; i < array.length; i += chunkSize) {
       const chunk = array.slice(i, i + chunkSize);
       newArray.push(chunk);
+    }
+    return newArray;
   }
-  return newArray;
-}
 
-  buildRealPrice(input: any){
+  buildRealPrice(input: any) {
 
     let tt = input as responseType2;
 
@@ -84,19 +107,19 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
 
       x: tt.precoReais.epochs as string[],
 
-      close: tt.precoReais.prices.map((t:any) => t.close) as number[],
+      close: tt.precoReais.prices.map((t: any) => t.close) as number[],
 
-      decreasing: {line: {color: '#7F7F7F'}},
+      decreasing: { line: { color: '#7F7F7F' } },
 
-      high: tt.precoReais.prices.map((t:any) => t.high) as number[],
+      high: tt.precoReais.prices.map((t: any) => t.high) as number[],
 
-      increasing: {line: {color: '#17BECF'}},
+      increasing: { line: { color: '#17BECF' } },
 
-      line: {color: 'rgba(31,119,180,1)'},
+      line: { color: 'rgba(31,119,180,1)' },
 
-      low: tt.precoReais.prices.map((t:any) => t.low) as number[],
+      low: tt.precoReais.prices.map((t: any) => t.low) as number[],
 
-      open: tt.precoReais.prices.map((t:any) => t.open) as number[],
+      open: tt.precoReais.prices.map((t: any) => t.open) as number[],
 
       type: 'candlestick',
       xaxis: 'x',
@@ -127,7 +150,7 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
     });
   }
 
-  buildTrained(input: any){
+  buildTrained(input: any) {
 
     let tt = input as responseType2;
 
@@ -138,19 +161,19 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
 
       x: tt.treinado.timestamps_b as string[],
 
-      close: splitIn4.map((t:any) => t[3]) as number[],
+      close: splitIn4.map((t: any) => t[3]) as number[],
 
-      decreasing: {line: {color: '#7F7F7F'}},
+      decreasing: { line: { color: '#7F7F7F' } },
 
-      high: splitIn4.map((t:any) => t[2]) as number[],
+      high: splitIn4.map((t: any) => t[2]) as number[],
 
-      increasing: {line: {color: '#17BECF'}},
+      increasing: { line: { color: '#17BECF' } },
 
-      line: {color: 'rgba(31,119,180,1)'},
+      line: { color: 'rgba(31,119,180,1)' },
 
-      low: splitIn4.map((t:any) => t[1]) as number[],
+      low: splitIn4.map((t: any) => t[1]) as number[],
 
-      open: splitIn4.map((t:any) => t[0]) as number[],
+      open: splitIn4.map((t: any) => t[0]) as number[],
 
       type: 'candlestick',
       xaxis: 'x',
@@ -182,7 +205,7 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
   }
 
 
-  buildValidation(input: any){
+  buildValidation(input: any) {
 
     let tt = input as responseType2;
 
@@ -193,19 +216,19 @@ export class EstatiscasComponent implements OnInit,AfterViewInit {
 
       x: tt.previsto.timestamps_c as string[],
 
-      close: splitIn4.map((t:any) => t[3]) as number[],
+      close: splitIn4.map((t: any) => t[3]) as number[],
 
-      decreasing: {line: {color: '#7F7F7F'}},
+      decreasing: { line: { color: '#7F7F7F' } },
 
-      high: splitIn4.map((t:any) => t[2]) as number[],
+      high: splitIn4.map((t: any) => t[2]) as number[],
 
-      increasing: {line: {color: '#17BECF'}},
+      increasing: { line: { color: '#17BECF' } },
 
-      line: {color: 'rgba(31,119,180,1)'},
+      line: { color: 'rgba(31,119,180,1)' },
 
-      low: splitIn4.map((t:any) => t[1]) as number[],
+      low: splitIn4.map((t: any) => t[1]) as number[],
 
-      open: splitIn4.map((t:any) => t[0]) as number[],
+      open: splitIn4.map((t: any) => t[0]) as number[],
 
       type: 'candlestick',
       xaxis: 'x',
