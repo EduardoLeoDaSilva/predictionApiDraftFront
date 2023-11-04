@@ -21,7 +21,7 @@ export class DerivClientService {
     this.ws.subscribe( {
           next: (res) => {
               setTimeout(() => {
-                this.getOlhcByPeriod('latest', 600)
+                this.getOlhcByPeriod('latest', 60)
                 tt = true;
               }, 10000)
 
@@ -29,9 +29,15 @@ export class DerivClientService {
             const eventRawObj = res;
 
             let { candles } = eventRawObj;
+
+            candles = candles as Array<any>;
+
             if (candles) {
+              (<Array<any>>candles).pop();
+              let tosend = candles.slice(Math.max(candles.length - 10, 0));
+
               console.log(candles[candles.length -2])
-              this.http.post('http://localhost:3000/api/predictFutureOlhc', candles[candles.length -2], {
+              this.http.post('http://localhost:3000/api/predictionNextOlhc', tosend, {
                 headers: {'Content-type': 'application/json'}
               }).subscribe((res) => {
                 this.subject.next(res);
@@ -62,10 +68,11 @@ export class DerivClientService {
   }
 
   constructor(private http: HttpClient) {
-    this.startConnection();
   }
 
   authenticate() {
+    this.startConnection();
+
     let authObj = { authorize: '6mdGWXGXwaDyMtC' }
     this.ws?.next(authObj);
   }
@@ -82,7 +89,7 @@ export class DerivClientService {
       end: lastEpochWanted,
       style: "candles",
       granularity: granurality,
-      count: 100,
+      count: 1000,
     };
     this.ws?.next(request);
   }
